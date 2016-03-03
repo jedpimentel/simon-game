@@ -9,6 +9,11 @@ Problem statement: http://www.freecodecamp.com/challenges/build-a-simon-game
 	195 Hz
 	147 Hz
 	112 Hz
+	
+to do:
+	"free press" button
+	disable selection within the button area
+	http://www.sitepoint.com/5-ways-prevent-300ms-click-delay-mobile-devices/
 
 Jose Eduardo Pimentel
 /jedpimentel

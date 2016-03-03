@@ -4,27 +4,35 @@
 	width: 30em;
 	height: 30em;
 	border: 1px solid black;
+	
 }
 
 .tone-button {
 	width: 45%;
 	height: 45%;
 	margin: 2%;
+	
+	background-size: cover;
 }
 
+/* button flash colors are described in JS file */
 #button-green  {
 	background-color: #0B0;
+	background-image: url("dino/rex0.gif");
 	border-radius: 50% 0 0 0;
 }
 #button-red    {
 	background-color: #B00;
+	background-image: url("dino/rex1.gif");
 	border-radius: 0 50% 0 0;
 }
 #button-yellow {
 	background-color: #BB0;
+	background-image: url("dino/rex2.gif");
 	border-radius: 0 0 0 50%;
 }
 #button-blue   {
 	background-color: #00B;
+	background-image: url("dino/rex3.gif");
 	border-radius: 0 0 50% 0;
 }
