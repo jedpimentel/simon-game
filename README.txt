@@ -14,6 +14,12 @@ to do:
 	"free press" button
 	disable selection within the button area
 	http://www.sitepoint.com/5-ways-prevent-300ms-click-delay-mobile-devices/
+	
+MODES:
+	Normal - Miss a beat and get another chance.
+	Strict - Miss a beat and start from scratch.
+	Zen    - Free play. Have fun with the cool sounds.
+	
 
 Jose Eduardo Pimentel
 /jedpimentel

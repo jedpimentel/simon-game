@@ -23,12 +23,17 @@ var settings = {
 	// A P P   V A R I A B L E S
 	mode : undefined, // "normal", "strict", "zen" initialized by default-checked HTML radio button
 	flashStack   : [0, 0, 0, 0], // used by buttonFlash function to deal with overlapping flashes
-	noteStack    : [], // array of required button presses
+	noteStack    : [], // array of button user needs to play in order
+	playingStack : {}, // temp storage while a file plays, files deleted after they are finished playing
 	correctPressesThisRound: 0,
 	isTurnOfAI   : false, // unused?
 	playerCanMove: true,
+	recordedSong : [], // user can record key presses and play them back
+	activePlayback: false, // is true while a recording is being played, to avoid re-recording those notes
 	
 }
+
+
 
 /*
 var beep = [
@@ -59,13 +64,27 @@ document.addEventListener("DOMContentLoaded", function(event) {
 	var buttons = document.getElementsByClassName("tone-button");
 	
 	// plays beep and flashes the button
+	// game breaks if browser doesn't cache the audio files
 	function playBeep(num, volume, delay) {
-		var audioClip = new Audio(beep[num].src);
-		audioClip.volume = volume || 1;
+		var clipID = Math.random();
+		settings.playingStack[clipID] = beep[num].cloneNode(false);
+		//settings.playingStack[clipID] = beep.slice(num,num+1)[0];
+		settings.playingStack[clipID].volume = volume || 1;
+		settings.playingStack[clipID].onended = function() {
+			test = settings.playingStack[clipID];
+			//console.log(settings.playingStack[clipID]);
+			delete settings.playingStack[clipID];
+			//console.log(settings.playingStack[clipID]);
+		}
 		setTimeout(function() {
-			audioClip.play();
+			settings.playingStack[clipID].play();
 			buttonFlash(buttons[num], num);
 		}, delay || 0);
+		
+		if (settings.mode == "zen" && settings.activePlayback == false) {
+			//settings.recordedSong.push(saveNote(num))
+			saveNote(num);
+		}
 	}
 	
 	
@@ -83,7 +102,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
 	
 	function resetGame() {
 		settings.noteStack = [];
-		aiTurn();
+		if (settings.mode !== 'zen') {
+			aiTurn();
+		}
 	}
 	
 	var gameMode = document.getElementsByClassName("game-mode");
@@ -168,25 +189,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
 	
 	//buttons[0].click();
 
-	function happyNote(callback) {
-		var speed = 1/1.3 || 1;
-		speed /= 8;
-		/*
-		playBeep(0,0,0 * speed);
-		playBeep(1,0,200 * speed);
-		playBeep(2,0,400 * speed);
-		playBeep(3,0,600 * speed);
-		playBeep(2,0,1000 * speed);
-		playBeep(3,0,1200 * speed);
-		*/
-		playBeep(0,0.25,200);
-		playBeep(1,0.25,200);
-		playBeep(2,0.25,200);
-		playBeep(3,0.25,200);
-		playBeep(0,0.25,225);
-		playBeep(1,0.25,225);
-		playBeep(2,0.25,225);
-		playBeep(3,0.25,225);
+	function happyNote(callback) {/*
+		playBeep(0,0.05,0);
+		playBeep(1,0.05,0);
+		playBeep(2,0.05,0);
+		playBeep(3,0.05,0);*/
 		setTimeout(function() {
 			callback();
 		}, 300);
@@ -200,7 +207,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 		playBeep(0,0,240);
 		playBeep(0,0,445);
 		setTimeout(function() {
-			callback();
+			if(callback) { callback(); }
 		}, 3000 + 445 + 500);
 	}
 	//sadNote();
@@ -229,13 +236,45 @@ document.addEventListener("DOMContentLoaded", function(event) {
 		funkyTownB()}, 500);
 	}
 	*/
+	
+	// used to save a user-made melody inside setttings.recordedSong via note and time
+	function saveNote(note) {
+		if (settings.activePlayback == true) { return; };
+		var zeroTime = settings.zeroTime || (settings.zeroTime = (new Date()).getTime());
+		var time = (new Date()).getTime() - zeroTime;
+		var noteAndTime = [note, time];
+		settings.recordedSong.push(noteAndTime);
+	}
+	function playSavedNotes() {
+		if (settings.activePlayback == true) { return; };
+		settings.activePlayback = true;
+		settings.recordedSong.map(function(val, index, arr) {
+			var note = val[0];
+			var time = val[1];
+			setTimeout(function() {
+				playBeep(note);
+			}, time);
+		});
+		var endOfRecording = settings.recordedSong[settings.recordedSong.length - 1][1];
+		setTimeout(function() { settings.activePlayback = false; }, endOfRecording + 50);
+	}
+	
 	document.onkeypress = function(event) {
+		console.log(event);
 		if (event.code === "KeyF") {
 			funkyTownA();
 		};
-		if (event.code == "Numpad7") buttons[0].click();
-		if (event.code == "Numpad8") buttons[1].click();
-		if (event.code == "Numpad4") buttons[2].click();
-		if (event.code == "Numpad5") buttons[3].click();
+		// used String.fromCharCode(event.keyCode) for cross browser compatability
+		if (event.code == "Numpad7" || String.fromCharCode(event.charCode).toUpperCase() == "Q") buttons[0].click();
+		if (event.code == "Numpad8" || String.fromCharCode(event.charCode).toUpperCase() == "W") buttons[1].click();
+		if (event.code == "Numpad4" || String.fromCharCode(event.charCode).toUpperCase() == "A") buttons[2].click();
+		if (event.code == "Numpad5" || String.fromCharCode(event.charCode).toUpperCase() == "S") buttons[3].click();
+		if (event.code == "Numpad3") playSavedNotes();
+		if (event.code == "Space") {
+			buttons[0].click();
+			buttons[1].click();
+			buttons[2].click();
+			buttons[3].click();
+		}
 	}
 });
