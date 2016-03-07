@@ -5,22 +5,32 @@
 	<title>Simon</title>
 	<link rel="stylesheet" type="text/css" href="style.css">
 	<script language="javascript" type="text/javascript" src="script.js"></script>
+	
+	<!-- http://www.webdesignerdepot.com/2012/02/common-mobile-web-design-mistakes/ -->
+	<meta id="meta" name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
 <body>
-	<div id="game-board">
-		<button type="button" id="button-green"  class="tone-button"></button>
-		<button type="button" id="button-red"    class="tone-button"></button>
-		<button type="button" id="button-yellow" class="tone-button"></button>
-		<button type="button" id="button-blue"   class="tone-button"></button>
-	</div><!-- end #game-board-->
-	<form>
-		<input type="radio" name="mode" class="game-mode" value="normal" checked> Normal<br>
-		<input type="radio" name="mode" class="game-mode" value="strict" > Strict<br>
-		<input type="radio" name="mode" class="game-mode" value="zen" > Zen - FREE PLAY!! :D
-	</form>
-	<p>Press buttons, use QWAS keys or numpad 7/8/4/5 keys. Press "F" for Funky Town</p>
-	<p>Presione botones, use las teclas QWAS o el numpad 7/8/4/5. Presione "F" para Funky Town</p>
+	<main>
+		<h1>TWENTY ROARS</h1>
+		<div id="game-board">
+			<div id="game-console"><div id="points"></div></div>
+			<button type="button" id="button-green"  class="tone-button"></button>
+			<button type="button" id="button-red"    class="tone-button"></button>
+			<button type="button" id="button-yellow" class="tone-button"></button>
+			<button type="button" id="button-blue"   class="tone-button"></button>
+			
+		</div><!-- end #game-board-->
+			
+		<form id="game-settings">
+			<button type="button" class="game-mode" value="normal" > Normal</button><br>
+			<button type="button" class="game-mode" value="strict" > Strict</button><br>
+			<button type="button" class="game-mode" value="zen" > Zen - FREE PLAY!! :D
+			<button type="button" id="record-button">RECORD</button>
+		</form>
+		<p>Press buttons, use QWAS keys or numpad 7/8/4/5 keys.</p>
+		<p>Presione botones, use las teclas QWAS o el numpad 7/8/4/5.</p>
+	</main>
 </body>
 
 </html>

@@ -16,12 +16,16 @@
 var settings = {
 	// A P P   S E T T I N G S
 	flashDuration     : 250,
+	//timeBetweenBeeps  : 500,
 	timeBetweenBeeps  : 500,
+	pointGoal    : 20,
+	difficultyCurve: 2, // hoy much the game speeds up over time, last turn is sped by this multiplier
 	normalColors : ['#0B0', '#B00', '#BB0', '#00B'], // overwritten by CSS colors after 'DOMContentLoaded'
 	flashColors  : ['#0F0', '#F00', '#FF0', '#00F'],
+	victorySong  : [[0,0],[1,163],[2,336],[3,522],[3,680],[3,853],[2,1068],[2,1219],[2,1370],[2,1497],[1,1650],[2,1813],[1,1983],[0,2226],[0,2786],[1,2962],[2,3139],[3,3306],[3,3472],[3,3626],[2,3826],[2,3987],[2,4128],[1,4338],[0,4546],[0,4698],[1,4952],[2,5912],[3,5927],[1,5936],[0,5944],[3,6202],[1,6212],[2,6218],[0,6226]],
 	
 	// A P P   V A R I A B L E S
-	mode : undefined, // "normal", "strict", "zen" initialized by default-checked HTML radio button
+	mode : "normal", // "normal", "strict", "zen" 
 	flashStack   : [0, 0, 0, 0], // used by buttonFlash function to deal with overlapping flashes
 	noteStack    : [], // array of button user needs to play in order
 	playingStack : {}, // temp storage while a file plays, files deleted after they are finished playing
@@ -62,11 +66,20 @@ function buttonFlash(button, index) {
 
 document.addEventListener("DOMContentLoaded", function(event) {
 	var buttons = document.getElementsByClassName("tone-button");
+	var counter = document.getElementById("points");
+	function displayPoints(val) { 
+		var pointTotal = (val<10?'0'+val:val).toString();
+		var ifZeroInsteadDisplay = 'XX'
+		counter.innerHTML = (pointTotal != '00')? pointTotal : ifZeroInsteadDisplay;
+		
+	}
+	displayPoints(0);
 	
 	// plays beep and flashes the button
 	// game breaks if browser doesn't cache the audio files
 	function playBeep(num, volume, delay) {
-		var clipID = Math.random();
+		displayPoints(settings.noteStack.length);
+		var clipID = Math.random(); //CHAAAAAAANGE THIS FOR TIMESTAMP
 		settings.playingStack[clipID] = beep[num].cloneNode(false);
 		//settings.playingStack[clipID] = beep.slice(num,num+1)[0];
 		settings.playingStack[clipID].volume = volume || 1;
@@ -101,24 +114,66 @@ document.addEventListener("DOMContentLoaded", function(event) {
 	}
 	
 	function resetGame() {
-		settings.noteStack = [];
+		if (settings.mode === 'strict') {
+			settings.noteStack = [];
+		}
 		if (settings.mode !== 'zen') {
 			aiTurn();
 		}
+		displayPoints(settings.noteStack.length);
+	}
+	
+	function victory() {
+		var originalMode = settings.mode;
+		settings.mode = "zen"; //ADD SOMETHING TO PREVENT USER FROM CHANGING MODES WHILE TUNE PLAYS
+		playSavedNotes(settings.victorySong);
+		var songDuration = settings.victorySong[settings.victorySong.length-1][1] + settings.timeBetweenBeeps;
+		makeElementFlash(counter, settings.timeBetweenBeeps, songDuration);
+		setTimeout(function() {
+			settings.mode = originalMode;
+			settings.noteStack = [];
+			aiTurn();
+		}, songDuration + settings.timeBetweenBeeps * 4);
 	}
 	
 	var gameMode = document.getElementsByClassName("game-mode");
+	settings.elStyleDefaults = {};
+	settings.elStyleDefaults['modeButton'] = {
+		color: window.getComputedStyle(gameMode[0], null).color,
+		backgroundColor: window.getComputedStyle(gameMode[0], null).backgroundColor,
+	}
+	function colorModeButtons() {
+		for(var i = 0; i < gameMode.length; i++ ) {
+			console.log(settings.mode, gameMode[i].value)
+			if (settings.mode == gameMode[i].value) {
+				// inverted color/background
+				gameMode[i].style.color = settings.elStyleDefaults['modeButton'].backgroundColor;
+				gameMode[i].style.backgroundColor = settings.elStyleDefaults['modeButton'].color;
+			}
+			else {
+				// normal color/background
+				gameMode[i].style.color = settings.elStyleDefaults['modeButton'].color;
+				gameMode[i].style.backgroundColor = settings.elStyleDefaults['modeButton'].backgroundColor;				
+			}
+		}
+	}
 	for (var i = 0; i < gameMode.length; i++) {
 		if (gameMode[i].checked) {settings.mode = gameMode[i].value; }
-		gameMode[i].addEventListener('change', function(event) {
+		gameMode[i].onclick = function(event) {
+			if (settings.playerCanMove == false) {return; }
+			settings.noteStack = [];
 			console.log(event.target.value);
 			settings.mode = event.target.value;
 			resetGame();
-		});
+			colorModeButtons();
+		};
 	}
+	colorModeButtons();
 
 	// plays notes that human has to input/repeat, player can't play notes until this ends
 	function playNoteStack(notePos) {
+		var multiplyer = 1 - (settings.noteStack.length - 1)/((settings.pointGoal - 1) * settings.difficultyCurve);
+		var speed = settings.timeBetweenBeeps * multiplyer;
 		var notePosToPlay = notePos || 0;
 		if (notePosToPlay >= settings.noteStack.length) {
 			settings.playerCanMove = true;
@@ -128,7 +183,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 			setTimeout(function() {
 				playBeep(noteToPlay);
 				playNoteStack(notePosToPlay+1);
-				}, settings.timeBetweenBeeps);
+				}, speed);
 		}
 	}
 	
@@ -137,12 +192,17 @@ document.addEventListener("DOMContentLoaded", function(event) {
 	
 	
 	function aiTurn() {
+		if (settings.noteStack.length >= settings.pointGoal) {
+			victory();
+			return;
+		}
 		var newNote = Math.floor(Math.random() * buttons.length);
 		settings.noteStack.push(newNote);
 		playNoteStack();
 	}
 	
 	function playerMove(note) {
+		makeElementFlash(counter, 100);
 		if (settings.mode == 'zen') {
 			playBeep(note);
 			return;
@@ -169,7 +229,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 			settings.playerCanMove = false;
 			settings.correctPressesThisRound = 0;
 			
-			if (settings.mode = 'strict') { 
+			if (settings.mode == 'strict') { 
 				sadNote();
 				setTimeout(function() {
 					resetGame();// start game from scratch
@@ -240,41 +300,118 @@ document.addEventListener("DOMContentLoaded", function(event) {
 	// used to save a user-made melody inside setttings.recordedSong via note and time
 	function saveNote(note) {
 		if (settings.activePlayback == true) { return; };
-		var zeroTime = settings.zeroTime || (settings.zeroTime = (new Date()).getTime());
-		var time = (new Date()).getTime() - zeroTime;
+		//var zeroTime = settings.zeroTime || (settings.zeroTime = (new Date()).getTime());
+		var time = (new Date()).getTime()// - zeroTime;
 		var noteAndTime = [note, time];
 		settings.recordedSong.push(noteAndTime);
 	}
-	function playSavedNotes() {
+	function playSavedNotes(notesToPlay) {
 		if (settings.activePlayback == true) { return; };
 		settings.activePlayback = true;
-		settings.recordedSong.map(function(val, index, arr) {
+		settings.playerCanMove = false;
+		var noteArr = notesToPlay || settings.recordedSong
+		var firstNoteTime = noteArr[0][1];
+		noteArr.map(function(val, index, arr) {
 			var note = val[0];
-			var time = val[1];
+			var time = val[1] - firstNoteTime;
 			setTimeout(function() {
 				playBeep(note);
 			}, time);
 		});
-		var endOfRecording = settings.recordedSong[settings.recordedSong.length - 1][1];
-		setTimeout(function() { settings.activePlayback = false; }, endOfRecording + 50);
+		var endOfRecording = noteArr[noteArr.length - 1][1] - firstNoteTime;
+		setTimeout(function() { 
+			settings.activePlayback = false; 
+			settings.playerCanMove = true;
+		}, endOfRecording + settings.timeBetweenBeeps);
 	}
 	
 	document.onkeypress = function(event) {
-		console.log(event);
-		if (event.code === "KeyF") {
-			funkyTownA();
-		};
+		var pressedKey = String.fromCharCode(event.charCode).toUpperCase();
+		console.log(String.fromCharCode(event.charCode).toUpperCase());
+		
+		if (pressedKey == "F") { funkyTownA(); }
+		
 		// used String.fromCharCode(event.keyCode) for cross browser compatability
-		if (event.code == "Numpad7" || String.fromCharCode(event.charCode).toUpperCase() == "Q") buttons[0].click();
-		if (event.code == "Numpad8" || String.fromCharCode(event.charCode).toUpperCase() == "W") buttons[1].click();
-		if (event.code == "Numpad4" || String.fromCharCode(event.charCode).toUpperCase() == "A") buttons[2].click();
-		if (event.code == "Numpad5" || String.fromCharCode(event.charCode).toUpperCase() == "S") buttons[3].click();
-		if (event.code == "Numpad3") playSavedNotes();
-		if (event.code == "Space") {
+		if (pressedKey == "7" || pressedKey == "Q") buttons[0].click();
+		if (pressedKey == "8" || pressedKey == "W") buttons[1].click();
+		if (pressedKey == "4" || pressedKey == "A") buttons[2].click();
+		if (pressedKey == "5" || pressedKey == "S") buttons[3].click();
+		if (pressedKey == "3") playSavedNotes();
+		if (pressedKey == " ") {
 			buttons[0].click();
 			buttons[1].click();
 			buttons[2].click();
 			buttons[3].click();
 		}
 	}
+	
+	var recordButton = document.getElementById("record-button")
+	settings.recording = false;
+	recordButton.onclick = function() {
+		if (settings.playerCanMove == false) {return;}
+		if (settings.recording == false) { 
+			// will now start recording
+			settings.recording = true;
+			gameMode[2].click();
+			settings.recordedSong = [];
+			this.style.color = "red";
+			this.innerHTML = "PLAY";
+			
+			
+
+		}
+		else {
+			// will now stop recording and play
+			playSavedNotes();
+			stopRecording();
+			gameMode[2].click();
+		}
+	}
+	function stopRecording() {
+		settings.recording = false;
+		recordButton.style.color = settings.elStyleDefaults['modeButton'].color;
+		recordButton.innerHTML = "RECORD"
+	}
 });
+
+
+// flashes color as backgroundColor, backgroundColor currently untouched
+// each propper "flash" lasts half a flashCycleTime, then waits another half flashCycleTime for next
+// if no "duration" var is given, a singlge propper "flash" of duration flashCycleTime occurs
+function makeElementFlash(node, flashCycleTime, duration) {
+	if (duration == undefined) { 
+		var flashCycleTime = flashCycleTime * 2;
+		var duration = flashCycleTime;
+	}
+	if (!settings.elStyleDefaults) { settings.elStyleDefaults = {}; }
+	if (!settings.elStyleDefaults[node]) { 
+		settings.elStyleDefaults[node] = {
+			color: window.getComputedStyle(node, null).color, 
+			backgroundColor: window.getComputedStyle(node, null).backgroundColor,
+		}
+	}
+	var transitionTimes = [];
+	for (var i = 0; i < 2 * duration/flashCycleTime; i++) {
+		transitionTimes.push(i * flashCycleTime / 2);
+	}
+	if (transitionTimes.length % 2 !== 0) { transitionTimes.push(duration); }
+	transitionTimes.map(function(time, index) {
+		setTimeout(function() {
+			if (index % 2 == 0) {
+				node.style.color = settings.elStyleDefaults[node].backgroundColor;
+			}
+			else {
+				node.style.color = settings.elStyleDefaults[node].color;
+			}
+		}, time);
+		
+	});
+}
+
+
+
+
+
+
+
+
