@@ -28,7 +28,6 @@ var settings = {
 	mode : "normal", // "normal", "strict", "zen" 
 	flashStack   : [0, 0, 0, 0], // used by buttonFlash function to deal with overlapping flashes
 	noteStack    : [], // array of button user needs to play in order
-	playingStack : {}, // temp storage while a file plays, files deleted after they are finished playing
 	correctPressesThisRound: 0,
 	isTurnOfAI   : false, // unused?
 	playerCanMove: true,
@@ -76,21 +75,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
 	displayPoints(0);
 	
 	// plays beep and flashes the button
-	// game breaks if browser doesn't cache the audio files
 	function playBeep(num, volume, delay) {
 		displayPoints(settings.noteStack.length);
-		var clipID = Math.random(); //CHAAAAAAANGE THIS FOR TIMESTAMP
-		settings.playingStack[clipID] = beep[num].cloneNode(false);
-		//settings.playingStack[clipID] = beep.slice(num,num+1)[0];
-		settings.playingStack[clipID].volume = volume || 1;
-		settings.playingStack[clipID].onended = function() {
-			test = settings.playingStack[clipID];
-			//console.log(settings.playingStack[clipID]);
-			delete settings.playingStack[clipID];
-			//console.log(settings.playingStack[clipID]);
-		}
 		setTimeout(function() {
-			settings.playingStack[clipID].play();
+			beep[num].volume = volume || 1;
+			beep[num].currentTime = 0;
+			beep[num].play();
 			buttonFlash(buttons[num], num);
 		}, delay || 0);
 		
@@ -144,7 +134,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 	}
 	function colorModeButtons() {
 		for(var i = 0; i < gameMode.length; i++ ) {
-			console.log(settings.mode, gameMode[i].value)
+			//console.log(settings.mode, gameMode[i].value)
 			if (settings.mode == gameMode[i].value) {
 				// inverted color/background
 				gameMode[i].style.color = settings.elStyleDefaults['modeButton'].backgroundColor;
@@ -162,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 		gameMode[i].onclick = function(event) {
 			if (settings.playerCanMove == false) {return; }
 			settings.noteStack = [];
-			console.log(event.target.value);
+			//console.log(event.target.value);
 			settings.mode = event.target.value;
 			resetGame();
 			colorModeButtons();
@@ -327,7 +317,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 	
 	document.onkeypress = function(event) {
 		var pressedKey = String.fromCharCode(event.charCode).toUpperCase();
-		console.log(String.fromCharCode(event.charCode).toUpperCase());
+		//console.log(String.fromCharCode(event.charCode).toUpperCase());
 		
 		if (pressedKey == "F") { funkyTownA(); }
 		
